@@ -17,6 +17,9 @@ public class Ticker
 
     [Column("exchange")]
     public string? Exchange { get; set; }
+    
+    [Column("market")]
+    public string? Market { get; set; }
 
     [Column("update_time")]
     public DateTime? UpdateTime { get; set; }

@@ -1,11 +1,10 @@
-﻿using System.Data;
-using FugleGrabber.Database;
+﻿using FugleGrabber.Database;
 using FugleGrabber.Service;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using MySql.Data.MySqlClient;
+
 
 var host = Host.CreateDefaultBuilder(args)
     .ConfigureAppConfiguration((context, config) =>
@@ -16,8 +15,7 @@ var host = Host.CreateDefaultBuilder(args)
     {
         var connectionString = context.Configuration.GetConnectionString("DefaultConnection");
         services.AddSingleton(new DatabaseHelper(connectionString));
-        services.AddTransient<IDbConnection>(_ => new MySqlConnection(connectionString));
-        services.AddTransient<TickerService>();
+        services.AddTransient<FugleDb>();
 
         // 註冊背景服務
         services.AddHostedService<ApiBackgroundService>();
