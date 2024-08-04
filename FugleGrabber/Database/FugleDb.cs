@@ -65,11 +65,11 @@ public class FugleDb
 
     #region Ticker
 
-public async Task InsertUpdateTickerInfoAsync(TickerInfo tickerInfo)
-{
-    using (IDbConnection connection = _databaseHelper.CreateConnection())
+    public async Task InsertUpdateTickerInfoAsync(TickerInfo tickerInfo)
     {
-        var query = @"
+        using (IDbConnection connection = _databaseHelper.CreateConnection())
+        {
+            var query = @"
             INSERT INTO tickerInfo (
                 symbol, name, type, exchange, market, industry, security_type, 
                 previous_close, reference_price, limit_up_price, limit_down_price, 
@@ -109,9 +109,53 @@ public async Task InsertUpdateTickerInfoAsync(TickerInfo tickerInfo)
                 trading_currency = VALUES(trading_currency),
                 update_time = VALUES(update_time)";
 
-        await connection.ExecuteAsync(query, tickerInfo);
+            await connection.ExecuteAsync(query, tickerInfo);
+        }
     }
-}
+
+    #endregion
+
+    #region Stock Quote
+
+    public async Task InsertOrUpdateStockQuoteAsync(StockQuote stockQuote)
+    {
+        using (IDbConnection connection = _databaseHelper.CreateConnection())
+        {
+            var query = @"
+            INSERT INTO stockQuote (
+                symbol, referencePrice, previousClose, openPrice, openTime, 
+                highPrice, highTime, lowPrice, lowTime, closePrice, 
+                closeTime, avgPrice, priceChange, changePercent, amplitude, 
+                lastPrice, lastSize, isClose, lastUpdated
+            ) VALUES (
+                @Symbol, @ReferencePrice, @PreviousClose, @OpenPrice, @OpenTime, 
+                @HighPrice, @HighTime, @LowPrice, @LowTime, @ClosePrice, 
+                @CloseTime, @AvgPrice, @PriceChange, @ChangePercent, @Amplitude, 
+                @LastPrice, @LastSize, @IsClose, @LastUpdated
+            ) ON DUPLICATE KEY UPDATE 
+                referencePrice = @ReferencePrice, 
+                previousClose = @PreviousClose, 
+                openPrice = @OpenPrice, 
+                openTime = @OpenTime, 
+                highPrice = @HighPrice, 
+                highTime = @HighTime, 
+                lowPrice = @LowPrice, 
+                lowTime = @LowTime, 
+                closePrice = @ClosePrice, 
+                closeTime = @CloseTime, 
+                avgPrice = @AvgPrice, 
+                priceChange = @PriceChange, 
+                changePercent = @ChangePercent, 
+                amplitude = @Amplitude, 
+                lastPrice = @LastPrice, 
+                lastSize = @LastSize, 
+                isClose = @IsClose, 
+                lastUpdated = @LastUpdated;
+        ";
+
+            await connection.ExecuteAsync(query, stockQuote);
+        }
+    }
 
     #endregion
 }

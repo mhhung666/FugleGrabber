@@ -15,6 +15,7 @@ public partial class ApiBackgroundService : BackgroundService
     private readonly string _apiKey;
     private readonly string _tickersApiUrl;
     private readonly string _tickerApiUrl;
+    private readonly string _quoteApiUrl;
     
     private readonly string[] _types = { "EQUITY", "INDEX", "WARRANT", "ODDLOT" };
     private readonly string[] _exchanges = { "TWSE", "TPEx" };
@@ -24,9 +25,10 @@ public partial class ApiBackgroundService : BackgroundService
     {
         _logger = logger;
         _httpClient = new HttpClient();
-        _apiKey = configuration["ApiSettings:ApiKey"];
-        _tickersApiUrl = configuration["ApiSettings:TickersApi"];
-        _tickerApiUrl = configuration["ApiSettings:TickerApi"];
+        _apiKey = configuration["ApiSettings:ApiKey"]!;
+        _tickersApiUrl = configuration["ApiSettings:TickersApi"]!;
+        _tickerApiUrl = configuration["ApiSettings:TickerApi"]!;
+        _quoteApiUrl = configuration["ApiSettings:QuoteApi"]!;
         _fugleDb = fugleDb;
     }
     
@@ -44,9 +46,9 @@ public partial class ApiBackgroundService : BackgroundService
         {
             try
             {
-                // var tickers = await GetTickersAsync();
-                // // Insert Update Ticker
-                // await _fugleDb.InsertUpdateTickersAsync(tickers);
+                // await UpdateTickers();
+                // await UpdateTickerInfoAsync();
+                await InsertUpdateStockQuote();
                 
                 await Task.Delay(TimeSpan.FromDays(1), stoppingToken);
             }
@@ -63,22 +65,56 @@ public partial class ApiBackgroundService : BackgroundService
         {
             try
             {
-                // do ticker update
-                var tickerList = await _fugleDb.GetTickerByTypeAsync("EQUITY");
-                
-                // Insert Update Ticker
-                foreach (var ticker in tickerList)
-                {
-                    var tickerInfo = await GetTickerInfoAsync(ticker.Symbol);
-                    await _fugleDb.InsertUpdateTickerInfoAsync(tickerInfo);
-                }
-
-                // 每五分钟一次
                 await Task.Delay(TimeSpan.FromMinutes(5), stoppingToken);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error occurred while executing other functionality.");
+            }
+        }
+    }
+
+    /// <summary>
+    /// 取得股票或指數列表
+    /// </summary>
+    private async Task UpdateTickers()
+    {
+        var tickers = await GetTickersAsync();
+        // Insert Update Ticker
+        await _fugleDb.InsertUpdateTickersAsync(tickers);
+    }
+
+    /// <summary>
+    /// 取得股票基本資料
+    /// </summary>
+    private async Task UpdateTickerInfoAsync()
+    {
+        // Get Tickers List from Db
+        var tickerList = await _fugleDb.GetTickerByTypeAsync("EQUITY");
+                
+        // Insert Update Ticker
+        foreach (var ticker in tickerList)
+        {
+            var tickerInfo = await GetTickerInfoAsync(ticker.Symbol);
+            await _fugleDb.InsertUpdateTickerInfoAsync(tickerInfo);
+        }
+    }
+
+    /// <summary>
+    /// 取得股票即時報價, 目前只打算取盤後時間資料
+    /// </summary>
+    private async Task InsertUpdateStockQuote()
+    {
+        // Get Tickers List from Db
+        var tickerList = await _fugleDb.GetTickerByTypeAsync("EQUITY");
+        
+        // Insert Update Ticker
+        foreach (var ticker in tickerList)
+        {
+            if (ticker.Name != string.Empty)
+            {
+                var stockQuoteInfo = await GetQuoteInfoAsync(ticker.Symbol);
+                await InsertOrUpdateStockQuoteAsync(stockQuoteInfo);
             }
         }
     }
